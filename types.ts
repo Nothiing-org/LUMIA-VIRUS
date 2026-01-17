@@ -23,6 +23,7 @@ export interface Project {
   revealMode: RevealMode;
   personaId: string;
   createdAt: number;
+  isPro?: boolean;
 }
 
 export interface DayRecord {

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { X, Upload, Check, ChevronRight, ChevronLeft, Volume2, PlayCircle, Sparkles, User, Mic2, Zap, Brain, Ghost, Shield, ZapOff, Activity } from 'lucide-react';
 import { Project, RevealMode, Persona } from '../types';
 import { GoogleGenAI, Modality } from "@google/genai";
+import { validateProCode, sanitizeInput } from '../utils/security';
 
 interface NewProjectModalProps {
   onClose: () => void;
@@ -48,8 +49,21 @@ const NewProjectModal: React.FC<NewProjectModalProps> = ({ onClose, onSave }) =>
   const [selectedPersonaId, setSelectedPersonaId] = useState<string>('p1');
   const [isPreviewing, setIsPreviewing] = useState<string | null>(null);
   const [audioSource, setAudioSource] = useState<AudioBufferSourceNode | null>(null);
+  const [isElite, setIsElite] = useState(false);
+  const [proCode, setProCode] = useState('');
+  const [isValidating, setIsValidating] = useState(false);
 
-  const isElite = name.toLowerCase().includes('llumina2026');
+  const checkProCode = async (val: string) => {
+    setProCode(val);
+    if (val.length >= 11) {
+      setIsValidating(true);
+      const isValid = await validateProCode(val);
+      setIsElite(isValid);
+      setIsValidating(false);
+    } else {
+      setIsElite(false);
+    }
+  };
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -120,7 +134,7 @@ const NewProjectModal: React.FC<NewProjectModalProps> = ({ onClose, onSave }) =>
     if (!name || !image) return;
     const newProject: Project = {
       id: crypto.randomUUID(),
-      name,
+      name: sanitizeInput(name),
       targetPlatform: 'TikTok', 
       resolution: { width: 1080, height: 1920 },
       baseImage: image,
@@ -130,6 +144,7 @@ const NewProjectModal: React.FC<NewProjectModalProps> = ({ onClose, onSave }) =>
       revealMode: mode,
       personaId: selectedPersonaId,
       createdAt: Date.now(),
+      isPro: isElite
     };
     onSave(newProject);
   };
@@ -164,21 +179,41 @@ const NewProjectModal: React.FC<NewProjectModalProps> = ({ onClose, onSave }) =>
                 <p className="text-zinc-500 font-medium">Define your project identity. This will be the metadata for every generated reveal.</p>
               </div>
               <div className="space-y-8 max-w-2xl mx-auto">
-                <div className="space-y-4">
-                  <label className="text-[10px] uppercase font-extrabold text-zinc-400 tracking-[0.4em] block text-center">Campaign Designation</label>
-                  <input 
-                    type="text" 
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    placeholder="e.g. PROJECT_OMEGA"
-                    className={`w-full border rounded-[24px] p-8 text-3xl font-extrabold tracking-tighter text-center focus:outline-none transition-all ${isElite ? 'bg-white/5 border-indigo-500/20 text-indigo-300 focus:border-indigo-500/50' : 'bg-[#f8f8f8] border-[#f0f0f0] focus:border-black/20'}`}
-                    autoFocus
-                  />
-                  {isElite && (
-                    <div className="flex justify-center animate-pulse">
-                      <span className="text-[8px] font-bold text-indigo-400 uppercase tracking-widest bg-indigo-500/10 px-4 py-1.5 rounded-full border border-indigo-500/20">Elite Protocol Detected</span>
+                <div className="space-y-6">
+                  <div className="space-y-4">
+                    <label className="text-[10px] uppercase font-extrabold text-zinc-400 tracking-[0.4em] block text-center">Campaign Designation</label>
+                    <input
+                      type="text"
+                      value={name}
+                      onChange={(e) => setName(e.target.value)}
+                      placeholder="e.g. PROJECT_OMEGA"
+                      className={`w-full border rounded-[24px] p-8 text-3xl font-extrabold tracking-tighter text-center focus:outline-none transition-all ${isElite ? 'bg-white/5 border-indigo-500/20 text-indigo-300 focus:border-indigo-500/50' : 'bg-[#f8f8f8] border-[#f0f0f0] focus:border-black/20'}`}
+                      autoFocus
+                    />
+                  </div>
+
+                  <div className="space-y-4">
+                    <label className="text-[10px] uppercase font-extrabold text-zinc-400 tracking-[0.4em] block text-center">Elite Access Code (Optional)</label>
+                    <div className="relative">
+                      <input
+                        type="password"
+                        value={proCode}
+                        onChange={(e) => checkProCode(e.target.value)}
+                        placeholder="••••••••••••"
+                        className={`w-full border rounded-[20px] p-4 text-center font-mono focus:outline-none transition-all ${isElite ? 'bg-indigo-500/10 border-indigo-500/30 text-indigo-300' : 'bg-[#f8f8f8] border-[#f0f0f0]'}`}
+                      />
+                      {isValidating && (
+                        <div className="absolute right-4 top-1/2 -translate-y-1/2">
+                          <div className="w-4 h-4 border-2 border-indigo-400 border-t-transparent rounded-full animate-spin" />
+                        </div>
+                      )}
                     </div>
-                  )}
+                    {isElite && (
+                      <div className="flex justify-center animate-pulse">
+                        <span className="text-[8px] font-bold text-indigo-400 uppercase tracking-widest bg-indigo-500/10 px-4 py-1.5 rounded-full border border-indigo-500/20">Elite Protocol Detected</span>
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
               <button 

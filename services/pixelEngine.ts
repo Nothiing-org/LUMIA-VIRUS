@@ -100,4 +100,71 @@ export class PixelEngine {
     this.lastRevealedCount = targetReveal;
     return this.currentMaskImageData;
   }
+
+  /**
+   * Applies a glitch effect to the provided ImageData
+   */
+  applyGlitch(imageData: ImageData, intensity: number = 0.2): void {
+    const data = imageData.data;
+    const width = imageData.width;
+    const height = imageData.height;
+    const random = mulberry32(Date.now());
+
+    // Horizontal slice shifting
+    const numSlices = Math.floor(random() * 5 * intensity);
+    for (let i = 0; i < numSlices; i++) {
+      const sliceY = Math.floor(random() * height);
+      const sliceHeight = Math.floor(random() * 20) + 1;
+      const shift = Math.floor((random() - 0.5) * 40 * intensity);
+
+      for (let y = sliceY; y < Math.min(sliceY + sliceHeight, height); y++) {
+        const rowStart = y * width * 4;
+        const rowCopy = new Uint8ClampedArray(data.subarray(rowStart, rowStart + width * 4));
+        for (let x = 0; x < width; x++) {
+          const targetX = (x + shift + width) % width;
+          const targetIdx = rowStart + targetX * 4;
+          const sourceIdx = x * 4;
+          data[targetIdx] = rowCopy[sourceIdx];
+          data[targetIdx + 1] = rowCopy[sourceIdx + 1];
+          data[targetIdx + 2] = rowCopy[sourceIdx + 2];
+          data[targetIdx + 3] = rowCopy[sourceIdx + 3];
+        }
+      }
+    }
+
+    // Color channel offset (Chromatic Aberration)
+    if (random() < intensity) {
+      const offset = Math.floor(random() * 5) + 1;
+      for (let i = 0; i < data.length - offset * 4; i += 4) {
+        data[i] = data[i + offset * 4]; // Red channel shift
+      }
+    }
+  }
+
+  /**
+   * Applies a design filter (Premium look)
+   */
+  applyDesignFilter(imageData: ImageData, type: 'GOLDEN' | 'NEON' | 'MONO' = 'NEON'): void {
+    const data = imageData.data;
+    for (let i = 0; i < data.length; i += 4) {
+      const r = data[i];
+      const g = data[i + 1];
+      const b = data[i + 2];
+
+      if (type === 'GOLDEN') {
+        data[i] = Math.min(255, r * 1.2);
+        data[i + 1] = Math.min(255, g * 1.0);
+        data[i + 2] = Math.min(255, b * 0.8);
+      } else if (type === 'NEON') {
+        data[i] = Math.min(255, r * 1.1);
+        data[i + 1] = Math.min(255, g * 0.9);
+        data[i + 2] = Math.min(255, b * 1.3);
+      } else if (type === 'MONO') {
+        const avg = (r + g + b) / 3;
+        data[i] = avg;
+        data[i + 1] = avg;
+        data[i + 2] = avg;
+      }
+    }
+  }
 }
