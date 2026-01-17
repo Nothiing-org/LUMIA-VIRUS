@@ -107,7 +107,7 @@ const App: React.FC = () => {
             ) : (
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-10 pb-safe">
                 {projects.map((project) => {
-                  const isElite = project.name.toLowerCase().includes('llumina2026');
+                  const isElite = project.isPro || project.name.toLowerCase().includes('llumina2026');
                   return (
                     <div 
                       key={project.id}

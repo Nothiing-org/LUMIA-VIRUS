@@ -10,6 +10,7 @@ import { PixelEngine } from '../services/pixelEngine';
 import { storage } from '../services/db';
 import { GoogleGenAI, Modality } from "@google/genai";
 import { PERSONAS } from './NewProjectModal';
+import { sanitizeInput, obfuscateData } from '../utils/security';
 
 interface DashboardProps {
   project: Project;
@@ -76,7 +77,7 @@ const Dashboard: React.FC<DashboardProps> = ({ project, onBack, onUpdateProject 
   const maskCanvasRef = useRef<HTMLCanvasElement | null>(null);
   const controlsTimeoutRef = useRef<number | null>(null);
 
-  const isElite = project.name.toLowerCase().includes('llumina2026');
+  const isElite = project.isPro || project.name.toLowerCase().includes('llumina2026');
   const activePersona = PERSONAS.find(p => p.id === project.personaId) || PERSONAS[0];
 
   useEffect(() => {
@@ -363,6 +364,7 @@ const Dashboard: React.FC<DashboardProps> = ({ project, onBack, onUpdateProject 
   const runStrategist = async () => {
     if (!strategistQuery.trim()) return;
     setIsThinking(true);
+    const sanitizedQuery = sanitizeInput(strategistQuery);
     setStrategistResponse(null);
     setGroundingSources([]);
     try {
@@ -377,7 +379,7 @@ const Dashboard: React.FC<DashboardProps> = ({ project, onBack, onUpdateProject 
         model,
         contents: `CONTEXT: Project ${project.name}, Day ${activeDay}, Mode: ${project.revealMode}, Persona: ${activePersona.name} (${activePersona.trait}). 
         Records: ${JSON.stringify(records)}.
-        USER QUERY: ${strategistQuery}.
+        USER QUERY: ${sanitizedQuery}.
         STRICT: Act as the assigned viral strategist persona. ${isElite ? 'Use Google Search for real-time viral trends.' : ''} Keep it concise, elite, and stay in character.`,
         config
       });
@@ -611,6 +613,12 @@ const Dashboard: React.FC<DashboardProps> = ({ project, onBack, onUpdateProject 
             </div>
           </div>
           <div className="flex items-center gap-2 lg:gap-4">
+            {isElite && (
+              <div className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-500/10 border border-emerald-500/20 rounded-full">
+                <Shield className="w-3.5 h-3.5 text-emerald-400" />
+                <span className="text-[8px] font-bold text-emerald-400 uppercase tracking-widest">Secure</span>
+              </div>
+            )}
             <button 
               onClick={() => { setShowStrategist(!showStrategist); setShowHistory(false); setShowSettings(false); }} 
               className={`p-2 rounded-xl transition-all ${showStrategist ? (isElite ? 'bg-indigo-500 text-white' : 'bg-black text-white') : 'text-zinc-400'}`}

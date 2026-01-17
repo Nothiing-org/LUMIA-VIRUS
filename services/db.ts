@@ -1,5 +1,6 @@
 
 import { Project, DayRecord } from '../types';
+import { obfuscateData, deobfuscateData } from '../utils/security';
 
 const DB_NAME = 'PixelRevealDB';
 const DB_VERSION = 2;
@@ -33,16 +34,35 @@ export const storage = {
       const tx = db.transaction(STORE_PROJECTS, 'readonly');
       const store = tx.objectStore(STORE_PROJECTS);
       const request = store.getAll();
-      request.onsuccess = () => resolve(request.result);
+      request.onsuccess = () => {
+        const results = request.result.map((p: Project) => {
+          if (p.isPro) {
+            try {
+              p.name = deobfuscateData(p.name);
+            } catch (e) {
+              console.error("Deobfuscation failed for project", p.id);
+            }
+          }
+          return p;
+        });
+        resolve(results);
+      };
     });
   },
 
   async saveProject(project: Project): Promise<void> {
     const db = await openDB();
+
+    // Security enhancement: Obfuscate sensitive data for Pro projects
+    const projectToSave = { ...project };
+    if (projectToSave.isPro) {
+      projectToSave.name = obfuscateData(projectToSave.name);
+    }
+
     return new Promise((resolve, reject) => {
       const tx = db.transaction(STORE_PROJECTS, 'readwrite');
       const store = tx.objectStore(STORE_PROJECTS);
-      const request = store.put(project);
+      const request = store.put(projectToSave);
       request.onsuccess = () => resolve();
       request.onerror = () => reject(request.error);
     });
