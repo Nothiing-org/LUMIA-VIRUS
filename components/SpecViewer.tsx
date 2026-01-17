@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Book, CheckCircle2, ShieldAlert, Cpu, Layers } from 'lucide-react';
 
@@ -67,7 +68,7 @@ const SpecViewer: React.FC = () => {
           <div className="space-y-2">
             <h4 className="text-xl font-bold tracking-tighter uppercase">Cinematic Synthesizer</h4>
             <p className="text-zinc-500 font-medium">
-              The export engine generates 15s loops at 30fps with high-bitrate encoding (12Mbps). Includes a 1s animated ticker for real-time progression feedback.
+              The export engine generates 6s loops at 30fps with high-bitrate encoding (up to 18Mbps for Pro). Includes a 1s animated ticker for real-time progression feedback for authorized status users.
             </p>
           </div>
         </div>
