@@ -162,7 +162,32 @@ const Dashboard: React.FC<DashboardProps> = ({ project, onBack, onUpdateProject 
     ctx.translate(canvas.width / 2, canvas.height / 2);
     ctx.scale(zoom, zoom);
     ctx.translate(-canvas.width / 2, -canvas.height / 2);
-    ctx.drawImage(img, x, y, img.width * scale, img.height * scale);
+
+    // Create temporary canvas for image processing
+    const tempCanvas = document.createElement('canvas');
+    tempCanvas.width = canvas.width;
+    tempCanvas.height = canvas.height;
+    const tempCtx = tempCanvas.getContext('2d');
+    if (tempCtx) {
+      tempCtx.drawImage(img, x, y, img.width * scale, img.height * scale);
+      const imageData = tempCtx.getImageData(0, 0, canvas.width, canvas.height);
+
+      // Apply Elite Design Filters
+      if (isElite) {
+        engineRef.current.applyDesignFilter(imageData, 'NEON');
+      }
+
+      // Apply Glitch Effect if Persona is Vex or isElite
+      if (activePersona.trait === 'Glitch' || (isElite && Math.random() < 0.05)) {
+        engineRef.current.applyGlitch(imageData, activePersona.trait === 'Glitch' ? 0.3 : 0.1);
+      }
+
+      tempCtx.putImageData(imageData, 0, 0);
+      ctx.drawImage(tempCanvas, 0, 0);
+    } else {
+      ctx.drawImage(img, x, y, img.width * scale, img.height * scale);
+    }
+
     ctx.restore();
 
     const pixelsToReveal = Math.floor(followers * project.pixelsPerFollower);
@@ -305,6 +330,33 @@ const Dashboard: React.FC<DashboardProps> = ({ project, onBack, onUpdateProject 
       setError("Persistence error.");
     } finally {
       setTimeout(() => setIsSyncing(false), 1000);
+    }
+  };
+
+  const quantumOptimizeScript = async () => {
+    if (!isElite) return;
+    setIsProcessing(true);
+    setExportStatus('Quantum Script Optimization...');
+    try {
+      const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+      const prompt = `Optimize the following viral script for maximum psychological impact and retention.
+      Project: ${project.name}, Day: ${activeDay}.
+      Persona: ${activePersona.name} (${activePersona.trait}).
+      Current Trend: Mystery reveal.
+      Output only the optimized script (max 20 words).`;
+
+      const res = await ai.models.generateContent({
+        model: 'gemini-3-pro-preview',
+        contents: prompt
+      });
+
+      setStrategistResponse(`OPTIMIZED SCRIPT:\n"${res.text}"`);
+      setShowStrategist(true);
+    } catch (err) {
+      setError("Quantum optimization failed.");
+    } finally {
+      setIsProcessing(false);
+      setExportStatus('');
     }
   };
 
@@ -760,6 +812,12 @@ const Dashboard: React.FC<DashboardProps> = ({ project, onBack, onUpdateProject 
                           <span className="text-[8px] font-bold text-indigo-200">32K Think Budget</span>
                         </div>
                       </div>
+                      <button
+                        onClick={quantumOptimizeScript}
+                        className="w-full py-3 bg-indigo-500 text-white rounded-xl text-[10px] font-bold uppercase tracking-widest hover:bg-indigo-400 transition-all flex items-center justify-center gap-2"
+                      >
+                        <Zap className="w-3 h-3" /> Quantum Script Optimizer
+                      </button>
                    </div>
                 )}
               </div>
