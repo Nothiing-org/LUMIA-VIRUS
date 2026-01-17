@@ -1,0 +1,7 @@
+{
+  "name": "llumina",
+  "description": "Premium Signal Synthesis for follower-based reveals. Signal, not noise.",
+  "requestFramePermissions": [
+    "camera"
+  ]
+}
